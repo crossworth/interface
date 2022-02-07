@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"entgo.io/bug/ent/garage"
+	"entgo.io/bug/ent/vehicle"
 	"entgo.io/ent/dialect/sql"
 )
 
-// Garage is the model entity for the Garage schema.
-type Garage struct {
+// Vehicle is the model entity for the Vehicle schema.
+type Vehicle struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
@@ -22,86 +22,86 @@ type Garage struct {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Garage) scanValues(columns []string) ([]interface{}, error) {
+func (*Vehicle) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case garage.FieldID, garage.FieldType, garage.FieldName:
+		case vehicle.FieldID, vehicle.FieldType, vehicle.FieldName:
 			values[i] = new(sql.NullString)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Garage", columns[i])
+			return nil, fmt.Errorf("unexpected column %q for type Vehicle", columns[i])
 		}
 	}
 	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Garage fields.
-func (ga *Garage) assignValues(columns []string, values []interface{}) error {
+// to the Vehicle fields.
+func (v *Vehicle) assignValues(columns []string, values []interface{}) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case garage.FieldID:
+		case vehicle.FieldID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
-				ga.ID = value.String
+				v.ID = value.String
 			}
-		case garage.FieldType:
+		case vehicle.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				ga.Type = value.String
+				v.Type = value.String
 			}
-		case garage.FieldName:
+		case vehicle.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				ga.Name = value.String
+				v.Name = value.String
 			}
 		}
 	}
 	return nil
 }
 
-// Update returns a builder for updating this Garage.
-// Note that you need to call Garage.Unwrap() before calling this method if this Garage
+// Update returns a builder for updating this Vehicle.
+// Note that you need to call Vehicle.Unwrap() before calling this method if this Vehicle
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (ga *Garage) Update() *GarageUpdateOne {
-	return (&GarageClient{config: ga.config}).UpdateOne(ga)
+func (v *Vehicle) Update() *VehicleUpdateOne {
+	return (&VehicleClient{config: v.config}).UpdateOne(v)
 }
 
-// Unwrap unwraps the Garage entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Vehicle entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (ga *Garage) Unwrap() *Garage {
-	tx, ok := ga.config.driver.(*txDriver)
+func (v *Vehicle) Unwrap() *Vehicle {
+	tx, ok := v.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Garage is not a transactional entity")
+		panic("ent: Vehicle is not a transactional entity")
 	}
-	ga.config.driver = tx.drv
-	return ga
+	v.config.driver = tx.drv
+	return v
 }
 
 // String implements the fmt.Stringer.
-func (ga *Garage) String() string {
+func (v *Vehicle) String() string {
 	var builder strings.Builder
-	builder.WriteString("Garage(")
-	builder.WriteString(fmt.Sprintf("id=%v", ga.ID))
+	builder.WriteString("Vehicle(")
+	builder.WriteString(fmt.Sprintf("id=%v", v.ID))
 	builder.WriteString(", type=")
-	builder.WriteString(ga.Type)
+	builder.WriteString(v.Type)
 	builder.WriteString(", name=")
-	builder.WriteString(ga.Name)
+	builder.WriteString(v.Name)
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// Garages is a parsable slice of Garage.
-type Garages []*Garage
+// Vehicles is a parsable slice of Vehicle.
+type Vehicles []*Vehicle
 
-func (ga Garages) config(cfg config) {
-	for _i := range ga {
-		ga[_i].config = cfg
+func (v Vehicles) config(cfg config) {
+	for _i := range v {
+		v[_i].config = cfg
 	}
 }

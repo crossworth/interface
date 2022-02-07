@@ -14,10 +14,10 @@ type Tx struct {
 	config
 	// Car is the client for interacting with the Car builders.
 	Car *CarClient
-	// Garage is the client for interacting with the Garage builders.
-	Garage *GarageClient
 	// Plane is the client for interacting with the Plane builders.
 	Plane *PlaneClient
+	// Vehicle is the client for interacting with the Vehicle builders.
+	Vehicle *VehicleClient
 
 	// lazily loaded.
 	client     *Client
@@ -154,8 +154,8 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Car = NewCarClient(tx.config)
-	tx.Garage = NewGarageClient(tx.config)
 	tx.Plane = NewPlaneClient(tx.config)
+	tx.Vehicle = NewVehicleClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

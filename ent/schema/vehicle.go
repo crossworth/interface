@@ -10,13 +10,13 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-// Garage holds the schema definition for the Garage entity.
-type Garage struct {
+// Vehicle holds the schema definition for the Vehicle entity.
+type Vehicle struct {
 	ent.Schema
 }
 
-// Fields of the Garage.
-func (Garage) Fields() []ent.Field {
+// Fields of the Vehicle.
+func (Vehicle) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").SchemaType(map[string]string{dialect.MySQL: " varchar(20)"}), // MUST be present
 		field.String("type"), // MUST be present

@@ -22,19 +22,6 @@ func (f CarFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) 
 	return f(ctx, mv)
 }
 
-// The GarageFunc type is an adapter to allow the use of ordinary
-// function as Garage mutator.
-type GarageFunc func(context.Context, *ent.GarageMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f GarageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GarageMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GarageMutation", m)
-	}
-	return f(ctx, mv)
-}
-
 // The PlaneFunc type is an adapter to allow the use of ordinary
 // function as Plane mutator.
 type PlaneFunc func(context.Context, *ent.PlaneMutation) (ent.Value, error)
@@ -44,6 +31,19 @@ func (f PlaneFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	mv, ok := m.(*ent.PlaneMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlaneMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The VehicleFunc type is an adapter to allow the use of ordinary
+// function as Vehicle mutator.
+type VehicleFunc func(context.Context, *ent.VehicleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VehicleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.VehicleMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VehicleMutation", m)
 	}
 	return f(ctx, mv)
 }

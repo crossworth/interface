@@ -19,18 +19,6 @@ var (
 		Columns:    CarsColumns,
 		PrimaryKey: []*schema.Column{CarsColumns[0]},
 	}
-	// GaragesColumns holds the columns for the "garages" table.
-	GaragesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, SchemaType: map[string]string{"mysql": " varchar(20)"}},
-		{Name: "type", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString},
-	}
-	// GaragesTable holds the schema information for the "garages" table.
-	GaragesTable = &schema.Table{
-		Name:       "garages",
-		Columns:    GaragesColumns,
-		PrimaryKey: []*schema.Column{GaragesColumns[0]},
-	}
 	// PlanesColumns holds the columns for the "planes" table.
 	PlanesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -42,11 +30,23 @@ var (
 		Columns:    PlanesColumns,
 		PrimaryKey: []*schema.Column{PlanesColumns[0]},
 	}
+	// VehiclesColumns holds the columns for the "vehicles" table.
+	VehiclesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, SchemaType: map[string]string{"mysql": " varchar(20)"}},
+		{Name: "type", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+	}
+	// VehiclesTable holds the schema information for the "vehicles" table.
+	VehiclesTable = &schema.Table{
+		Name:       "vehicles",
+		Columns:    VehiclesColumns,
+		PrimaryKey: []*schema.Column{VehiclesColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CarsTable,
-		GaragesTable,
 		PlanesTable,
+		VehiclesTable,
 	}
 )
 

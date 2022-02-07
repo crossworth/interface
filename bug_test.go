@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"entgo.io/bug/ent/garage"
+	"entgo.io/bug/ent/vehicle"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
@@ -65,7 +65,7 @@ func test(t *testing.T, client *ent.Client) {
 	client.Car.Create().SetName("Car2").SaveX(ctx)
 	client.Car.Create().SetName("Car3").SaveX(ctx)
 
-	bq := client.Debug().Garage.Query()
+	bq := client.Debug().Vehicle.Query()
 
 	// subQuery (our virtual table that "union all" the car and plane type)
 	subQuery := ent.Selector(ctx, bq.Clone().Modify(func(s *sql.Selector) {
@@ -76,18 +76,18 @@ func test(t *testing.T, client *ent.Client) {
 		tb2 := sql.Table("planes").As("p")
 		sel := sql.Select(tb2.C("id"), "'plane' AS `type`", tb2.C("name")).From(tb2)
 
-		s.UnionAll(sel).As("garages")
+		s.UnionAll(sel).As("vehicles")
 	}))
 
 	// ALL
 	vehs := bq.Clone().Modify(func(s *sql.Selector) {
-		s.Select(s.C(garage.FieldID), s.C(garage.FieldType), s.C(garage.FieldName)).From(subQuery).As("g")
+		s.Select(s.C(vehicle.FieldID), s.C(vehicle.FieldType), s.C(vehicle.FieldName)).From(subQuery).As("g")
 	}).AllX(ctx)
 	for _, v := range vehs {
 		fmt.Printf("%s:%s: %s\n", v.ID, v.Type, v.Name)
 	}
 
-	// 2022/02/07 18:36:46 driver.Query: query=SELECT DISTINCT `garages`.`id`, `garages`.`type`, `garages`.`name` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name` FROM `planes` AS `p`) AS `garages` args=[]
+	// 2022/02/07 18:36:46 driver.Query: query=SELECT DISTINCT `vehicles`.`id`, `vehicles`.`type`, `vehicles`.`name` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name` FROM `planes` AS `p`) AS `vehicles` args=[]
 	// 1:plane: Car1
 	// 2:plane: Car2
 	// 3:plane: Car3
@@ -97,7 +97,7 @@ func test(t *testing.T, client *ent.Client) {
 
 	// WHERE
 	vehs = bq.Clone().Modify(func(s *sql.Selector) {
-		s.Select(s.C(garage.FieldID), s.C(garage.FieldType), s.C(garage.FieldName)).From(subQuery).As("g")
+		s.Select(s.C(vehicle.FieldID), s.C(vehicle.FieldType), s.C(vehicle.FieldName)).From(subQuery).As("g")
 	}).Where(func(selector *sql.Selector) {
 		selector.Where(sql.HasSuffix("name", "2"))
 	}).AllX(ctx)
@@ -105,18 +105,18 @@ func test(t *testing.T, client *ent.Client) {
 		fmt.Printf("%s:%s: %s\n", v.ID, v.Type, v.Name)
 	}
 
-	// 2022/02/07 18:36:46 driver.Query: query=SELECT DISTINCT `garages`.`id`, `garages`.`type`, `garages`.`name` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name` FROM `planes` AS `p`) AS `garages` WHERE `name` LIKE ? args=[%2]
+	// 2022/02/07 18:36:46 driver.Query: query=SELECT DISTINCT `vehicles`.`id`, `vehicles`.`type`, `vehicles`.`name` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name` FROM `planes` AS `p`) AS `vehicles` WHERE `name` LIKE ? args=[%2]
 	// 2:plane: Car2
 	// 2:plane: Plane2
 
 	// LIMIT OFFSET
 	vehs = bq.Clone().Modify(func(s *sql.Selector) {
-		s.Select(s.C(garage.FieldID), s.C(garage.FieldType), s.C(garage.FieldName)).From(subQuery).As("g")
+		s.Select(s.C(vehicle.FieldID), s.C(vehicle.FieldType), s.C(vehicle.FieldName)).From(subQuery).As("g")
 	}).Limit(1).Offset(1).AllX(ctx)
 	for _, v := range vehs {
 		fmt.Printf("%s:%s: %s\n", v.ID, v.Type, v.Name)
 	}
 
-	// 2022/02/07 18:36:46 driver.Query: query=SELECT DISTINCT `garages`.`id`, `garages`.`type`, `garages`.`name` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name` FROM `planes` AS `p`) AS `garages` LIMIT 1 OFFSET 1 args=[]
+	// 2022/02/07 18:36:46 driver.Query: query=SELECT DISTINCT `vehicles`.`id`, `vehicles`.`type`, `vehicles`.`name` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name` FROM `planes` AS `p`) AS `vehicles` LIMIT 1 OFFSET 1 args=[]
 	// 2:plane: Car2
 }

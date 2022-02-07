@@ -10,8 +10,8 @@ import (
 	"entgo.io/bug/ent/migrate"
 
 	"entgo.io/bug/ent/car"
-	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
+	"entgo.io/bug/ent/vehicle"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
@@ -24,10 +24,10 @@ type Client struct {
 	Schema *migrate.Schema
 	// Car is the client for interacting with the Car builders.
 	Car *CarClient
-	// Garage is the client for interacting with the Garage builders.
-	Garage *GarageClient
 	// Plane is the client for interacting with the Plane builders.
 	Plane *PlaneClient
+	// Vehicle is the client for interacting with the Vehicle builders.
+	Vehicle *VehicleClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -42,8 +42,8 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Car = NewCarClient(c.config)
-	c.Garage = NewGarageClient(c.config)
 	c.Plane = NewPlaneClient(c.config)
+	c.Vehicle = NewVehicleClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -75,11 +75,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Car:    NewCarClient(cfg),
-		Garage: NewGarageClient(cfg),
-		Plane:  NewPlaneClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Car:     NewCarClient(cfg),
+		Plane:   NewPlaneClient(cfg),
+		Vehicle: NewVehicleClient(cfg),
 	}, nil
 }
 
@@ -97,10 +97,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		config: cfg,
-		Car:    NewCarClient(cfg),
-		Garage: NewGarageClient(cfg),
-		Plane:  NewPlaneClient(cfg),
+		config:  cfg,
+		Car:     NewCarClient(cfg),
+		Plane:   NewPlaneClient(cfg),
+		Vehicle: NewVehicleClient(cfg),
 	}, nil
 }
 
@@ -131,8 +131,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Car.Use(hooks...)
-	c.Garage.Use(hooks...)
 	c.Plane.Use(hooks...)
+	c.Vehicle.Use(hooks...)
 }
 
 // CarClient is a client for the Car schema.
@@ -225,96 +225,6 @@ func (c *CarClient) Hooks() []Hook {
 	return c.hooks.Car
 }
 
-// GarageClient is a client for the Garage schema.
-type GarageClient struct {
-	config
-}
-
-// NewGarageClient returns a client for the Garage from the given config.
-func NewGarageClient(c config) *GarageClient {
-	return &GarageClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `garage.Hooks(f(g(h())))`.
-func (c *GarageClient) Use(hooks ...Hook) {
-	c.hooks.Garage = append(c.hooks.Garage, hooks...)
-}
-
-// Create returns a create builder for Garage.
-func (c *GarageClient) Create() *GarageCreate {
-	mutation := newGarageMutation(c.config, OpCreate)
-	return &GarageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Garage entities.
-func (c *GarageClient) CreateBulk(builders ...*GarageCreate) *GarageCreateBulk {
-	return &GarageCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Garage.
-func (c *GarageClient) Update() *GarageUpdate {
-	mutation := newGarageMutation(c.config, OpUpdate)
-	return &GarageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *GarageClient) UpdateOne(ga *Garage) *GarageUpdateOne {
-	mutation := newGarageMutation(c.config, OpUpdateOne, withGarage(ga))
-	return &GarageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *GarageClient) UpdateOneID(id string) *GarageUpdateOne {
-	mutation := newGarageMutation(c.config, OpUpdateOne, withGarageID(id))
-	return &GarageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Garage.
-func (c *GarageClient) Delete() *GarageDelete {
-	mutation := newGarageMutation(c.config, OpDelete)
-	return &GarageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *GarageClient) DeleteOne(ga *Garage) *GarageDeleteOne {
-	return c.DeleteOneID(ga.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *GarageClient) DeleteOneID(id string) *GarageDeleteOne {
-	builder := c.Delete().Where(garage.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &GarageDeleteOne{builder}
-}
-
-// Query returns a query builder for Garage.
-func (c *GarageClient) Query() *GarageQuery {
-	return &GarageQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a Garage entity by its id.
-func (c *GarageClient) Get(ctx context.Context, id string) (*Garage, error) {
-	return c.Query().Where(garage.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *GarageClient) GetX(ctx context.Context, id string) *Garage {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *GarageClient) Hooks() []Hook {
-	return c.hooks.Garage
-}
-
 // PlaneClient is a client for the Plane schema.
 type PlaneClient struct {
 	config
@@ -403,4 +313,94 @@ func (c *PlaneClient) GetX(ctx context.Context, id int) *Plane {
 // Hooks returns the client hooks.
 func (c *PlaneClient) Hooks() []Hook {
 	return c.hooks.Plane
+}
+
+// VehicleClient is a client for the Vehicle schema.
+type VehicleClient struct {
+	config
+}
+
+// NewVehicleClient returns a client for the Vehicle from the given config.
+func NewVehicleClient(c config) *VehicleClient {
+	return &VehicleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `vehicle.Hooks(f(g(h())))`.
+func (c *VehicleClient) Use(hooks ...Hook) {
+	c.hooks.Vehicle = append(c.hooks.Vehicle, hooks...)
+}
+
+// Create returns a create builder for Vehicle.
+func (c *VehicleClient) Create() *VehicleCreate {
+	mutation := newVehicleMutation(c.config, OpCreate)
+	return &VehicleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Vehicle entities.
+func (c *VehicleClient) CreateBulk(builders ...*VehicleCreate) *VehicleCreateBulk {
+	return &VehicleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Vehicle.
+func (c *VehicleClient) Update() *VehicleUpdate {
+	mutation := newVehicleMutation(c.config, OpUpdate)
+	return &VehicleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VehicleClient) UpdateOne(v *Vehicle) *VehicleUpdateOne {
+	mutation := newVehicleMutation(c.config, OpUpdateOne, withVehicle(v))
+	return &VehicleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VehicleClient) UpdateOneID(id string) *VehicleUpdateOne {
+	mutation := newVehicleMutation(c.config, OpUpdateOne, withVehicleID(id))
+	return &VehicleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Vehicle.
+func (c *VehicleClient) Delete() *VehicleDelete {
+	mutation := newVehicleMutation(c.config, OpDelete)
+	return &VehicleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *VehicleClient) DeleteOne(v *Vehicle) *VehicleDeleteOne {
+	return c.DeleteOneID(v.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *VehicleClient) DeleteOneID(id string) *VehicleDeleteOne {
+	builder := c.Delete().Where(vehicle.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VehicleDeleteOne{builder}
+}
+
+// Query returns a query builder for Vehicle.
+func (c *VehicleClient) Query() *VehicleQuery {
+	return &VehicleQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Vehicle entity by its id.
+func (c *VehicleClient) Get(ctx context.Context, id string) (*Vehicle, error) {
+	return c.Query().Where(vehicle.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VehicleClient) GetX(ctx context.Context, id string) *Vehicle {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *VehicleClient) Hooks() []Hook {
+	return c.hooks.Vehicle
 }
