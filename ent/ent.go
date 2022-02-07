@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"entgo.io/bug/ent/car"
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
 	"entgo.io/bug/ent/vehicle"
 	"entgo.io/ent"
@@ -32,6 +33,7 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		car.Table:     car.ValidColumn,
+		garage.Table:  garage.ValidColumn,
 		plane.Table:   plane.ValidColumn,
 		vehicle.Table: vehicle.ValidColumn,
 	}

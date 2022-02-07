@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -23,6 +24,25 @@ type PlaneCreate struct {
 func (pc *PlaneCreate) SetName(s string) *PlaneCreate {
 	pc.mutation.SetName(s)
 	return pc
+}
+
+// SetGarageID sets the "garage_id" field.
+func (pc *PlaneCreate) SetGarageID(i int) *PlaneCreate {
+	pc.mutation.SetGarageID(i)
+	return pc
+}
+
+// SetNillableGarageID sets the "garage_id" field if the given value is not nil.
+func (pc *PlaneCreate) SetNillableGarageID(i *int) *PlaneCreate {
+	if i != nil {
+		pc.SetGarageID(*i)
+	}
+	return pc
+}
+
+// SetGarage sets the "garage" edge to the Garage entity.
+func (pc *PlaneCreate) SetGarage(g *Garage) *PlaneCreate {
+	return pc.SetGarageID(g.ID)
 }
 
 // Mutation returns the PlaneMutation object of the builder.
@@ -132,6 +152,26 @@ func (pc *PlaneCreate) createSpec() (*Plane, *sqlgraph.CreateSpec) {
 			Column: plane.FieldName,
 		})
 		_node.Name = value
+	}
+	if nodes := pc.mutation.GarageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   plane.GarageTable,
+			Columns: []string{plane.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.GarageID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

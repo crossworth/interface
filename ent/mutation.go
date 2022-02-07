@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"entgo.io/bug/ent/car"
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/bug/ent/vehicle"
@@ -26,6 +27,7 @@ const (
 
 	// Node types.
 	TypeCar     = "Car"
+	TypeGarage  = "Garage"
 	TypePlane   = "Plane"
 	TypeVehicle = "Vehicle"
 )
@@ -38,6 +40,8 @@ type CarMutation struct {
 	id            *int
 	name          *string
 	clearedFields map[string]struct{}
+	garage        *int
+	clearedgarage bool
 	done          bool
 	oldValue      func(context.Context) (*Car, error)
 	predicates    []predicate.Car
@@ -177,6 +181,81 @@ func (m *CarMutation) ResetName() {
 	m.name = nil
 }
 
+// SetGarageID sets the "garage_id" field.
+func (m *CarMutation) SetGarageID(i int) {
+	m.garage = &i
+}
+
+// GarageID returns the value of the "garage_id" field in the mutation.
+func (m *CarMutation) GarageID() (r int, exists bool) {
+	v := m.garage
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGarageID returns the old "garage_id" field's value of the Car entity.
+// If the Car object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CarMutation) OldGarageID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGarageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGarageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGarageID: %w", err)
+	}
+	return oldValue.GarageID, nil
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (m *CarMutation) ClearGarageID() {
+	m.garage = nil
+	m.clearedFields[car.FieldGarageID] = struct{}{}
+}
+
+// GarageIDCleared returns if the "garage_id" field was cleared in this mutation.
+func (m *CarMutation) GarageIDCleared() bool {
+	_, ok := m.clearedFields[car.FieldGarageID]
+	return ok
+}
+
+// ResetGarageID resets all changes to the "garage_id" field.
+func (m *CarMutation) ResetGarageID() {
+	m.garage = nil
+	delete(m.clearedFields, car.FieldGarageID)
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (m *CarMutation) ClearGarage() {
+	m.clearedgarage = true
+}
+
+// GarageCleared reports if the "garage" edge to the Garage entity was cleared.
+func (m *CarMutation) GarageCleared() bool {
+	return m.GarageIDCleared() || m.clearedgarage
+}
+
+// GarageIDs returns the "garage" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GarageID instead. It exists only for internal usage by the builders.
+func (m *CarMutation) GarageIDs() (ids []int) {
+	if id := m.garage; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGarage resets all changes to the "garage" edge.
+func (m *CarMutation) ResetGarage() {
+	m.garage = nil
+	m.clearedgarage = false
+}
+
 // Where appends a list predicates to the CarMutation builder.
 func (m *CarMutation) Where(ps ...predicate.Car) {
 	m.predicates = append(m.predicates, ps...)
@@ -196,9 +275,12 @@ func (m *CarMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CarMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.name != nil {
 		fields = append(fields, car.FieldName)
+	}
+	if m.garage != nil {
+		fields = append(fields, car.FieldGarageID)
 	}
 	return fields
 }
@@ -210,6 +292,8 @@ func (m *CarMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case car.FieldName:
 		return m.Name()
+	case car.FieldGarageID:
+		return m.GarageID()
 	}
 	return nil, false
 }
@@ -221,6 +305,8 @@ func (m *CarMutation) OldField(ctx context.Context, name string) (ent.Value, err
 	switch name {
 	case car.FieldName:
 		return m.OldName(ctx)
+	case car.FieldGarageID:
+		return m.OldGarageID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Car field %s", name)
 }
@@ -237,6 +323,13 @@ func (m *CarMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
+	case car.FieldGarageID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGarageID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Car field %s", name)
 }
@@ -244,13 +337,16 @@ func (m *CarMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *CarMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *CarMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
 	return nil, false
 }
 
@@ -266,7 +362,11 @@ func (m *CarMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CarMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(car.FieldGarageID) {
+		fields = append(fields, car.FieldGarageID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -279,6 +379,11 @@ func (m *CarMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CarMutation) ClearField(name string) error {
+	switch name {
+	case car.FieldGarageID:
+		m.ClearGarageID()
+		return nil
+	}
 	return fmt.Errorf("unknown Car nullable field %s", name)
 }
 
@@ -289,56 +394,398 @@ func (m *CarMutation) ResetField(name string) error {
 	case car.FieldName:
 		m.ResetName()
 		return nil
+	case car.FieldGarageID:
+		m.ResetGarageID()
+		return nil
 	}
 	return fmt.Errorf("unknown Car field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CarMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.garage != nil {
+		edges = append(edges, car.EdgeGarage)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *CarMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case car.EdgeGarage:
+		if id := m.garage; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CarMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *CarMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CarMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedgarage {
+		edges = append(edges, car.EdgeGarage)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *CarMutation) EdgeCleared(name string) bool {
+	switch name {
+	case car.EdgeGarage:
+		return m.clearedgarage
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *CarMutation) ClearEdge(name string) error {
+	switch name {
+	case car.EdgeGarage:
+		m.ClearGarage()
+		return nil
+	}
 	return fmt.Errorf("unknown Car unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *CarMutation) ResetEdge(name string) error {
+	switch name {
+	case car.EdgeGarage:
+		m.ResetGarage()
+		return nil
+	}
 	return fmt.Errorf("unknown Car edge %s", name)
+}
+
+// GarageMutation represents an operation that mutates the Garage nodes in the graph.
+type GarageMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	name          *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Garage, error)
+	predicates    []predicate.Garage
+}
+
+var _ ent.Mutation = (*GarageMutation)(nil)
+
+// garageOption allows management of the mutation configuration using functional options.
+type garageOption func(*GarageMutation)
+
+// newGarageMutation creates new mutation for the Garage entity.
+func newGarageMutation(c config, op Op, opts ...garageOption) *GarageMutation {
+	m := &GarageMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGarage,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGarageID sets the ID field of the mutation.
+func withGarageID(id int) garageOption {
+	return func(m *GarageMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Garage
+		)
+		m.oldValue = func(ctx context.Context) (*Garage, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Garage.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGarage sets the old Garage of the mutation.
+func withGarage(node *Garage) garageOption {
+	return func(m *GarageMutation) {
+		m.oldValue = func(context.Context) (*Garage, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GarageMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GarageMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GarageMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GarageMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Garage.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *GarageMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *GarageMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Garage entity.
+// If the Garage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GarageMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *GarageMutation) ResetName() {
+	m.name = nil
+}
+
+// Where appends a list predicates to the GarageMutation builder.
+func (m *GarageMutation) Where(ps ...predicate.Garage) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *GarageMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Garage).
+func (m *GarageMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GarageMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.name != nil {
+		fields = append(fields, garage.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GarageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case garage.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GarageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case garage.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown Garage field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GarageMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case garage.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Garage field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GarageMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GarageMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GarageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Garage numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GarageMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GarageMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GarageMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Garage nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GarageMutation) ResetField(name string) error {
+	switch name {
+	case garage.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Garage field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GarageMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GarageMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GarageMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GarageMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GarageMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GarageMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GarageMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Garage unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GarageMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Garage edge %s", name)
 }
 
 // PlaneMutation represents an operation that mutates the Plane nodes in the graph.
@@ -349,6 +796,8 @@ type PlaneMutation struct {
 	id            *int
 	name          *string
 	clearedFields map[string]struct{}
+	garage        *int
+	clearedgarage bool
 	done          bool
 	oldValue      func(context.Context) (*Plane, error)
 	predicates    []predicate.Plane
@@ -488,6 +937,81 @@ func (m *PlaneMutation) ResetName() {
 	m.name = nil
 }
 
+// SetGarageID sets the "garage_id" field.
+func (m *PlaneMutation) SetGarageID(i int) {
+	m.garage = &i
+}
+
+// GarageID returns the value of the "garage_id" field in the mutation.
+func (m *PlaneMutation) GarageID() (r int, exists bool) {
+	v := m.garage
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGarageID returns the old "garage_id" field's value of the Plane entity.
+// If the Plane object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlaneMutation) OldGarageID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGarageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGarageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGarageID: %w", err)
+	}
+	return oldValue.GarageID, nil
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (m *PlaneMutation) ClearGarageID() {
+	m.garage = nil
+	m.clearedFields[plane.FieldGarageID] = struct{}{}
+}
+
+// GarageIDCleared returns if the "garage_id" field was cleared in this mutation.
+func (m *PlaneMutation) GarageIDCleared() bool {
+	_, ok := m.clearedFields[plane.FieldGarageID]
+	return ok
+}
+
+// ResetGarageID resets all changes to the "garage_id" field.
+func (m *PlaneMutation) ResetGarageID() {
+	m.garage = nil
+	delete(m.clearedFields, plane.FieldGarageID)
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (m *PlaneMutation) ClearGarage() {
+	m.clearedgarage = true
+}
+
+// GarageCleared reports if the "garage" edge to the Garage entity was cleared.
+func (m *PlaneMutation) GarageCleared() bool {
+	return m.GarageIDCleared() || m.clearedgarage
+}
+
+// GarageIDs returns the "garage" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GarageID instead. It exists only for internal usage by the builders.
+func (m *PlaneMutation) GarageIDs() (ids []int) {
+	if id := m.garage; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGarage resets all changes to the "garage" edge.
+func (m *PlaneMutation) ResetGarage() {
+	m.garage = nil
+	m.clearedgarage = false
+}
+
 // Where appends a list predicates to the PlaneMutation builder.
 func (m *PlaneMutation) Where(ps ...predicate.Plane) {
 	m.predicates = append(m.predicates, ps...)
@@ -507,9 +1031,12 @@ func (m *PlaneMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PlaneMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.name != nil {
 		fields = append(fields, plane.FieldName)
+	}
+	if m.garage != nil {
+		fields = append(fields, plane.FieldGarageID)
 	}
 	return fields
 }
@@ -521,6 +1048,8 @@ func (m *PlaneMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case plane.FieldName:
 		return m.Name()
+	case plane.FieldGarageID:
+		return m.GarageID()
 	}
 	return nil, false
 }
@@ -532,6 +1061,8 @@ func (m *PlaneMutation) OldField(ctx context.Context, name string) (ent.Value, e
 	switch name {
 	case plane.FieldName:
 		return m.OldName(ctx)
+	case plane.FieldGarageID:
+		return m.OldGarageID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Plane field %s", name)
 }
@@ -548,6 +1079,13 @@ func (m *PlaneMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
+	case plane.FieldGarageID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGarageID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Plane field %s", name)
 }
@@ -555,13 +1093,16 @@ func (m *PlaneMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *PlaneMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *PlaneMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
 	return nil, false
 }
 
@@ -577,7 +1118,11 @@ func (m *PlaneMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *PlaneMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(plane.FieldGarageID) {
+		fields = append(fields, plane.FieldGarageID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -590,6 +1135,11 @@ func (m *PlaneMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *PlaneMutation) ClearField(name string) error {
+	switch name {
+	case plane.FieldGarageID:
+		m.ClearGarageID()
+		return nil
+	}
 	return fmt.Errorf("unknown Plane nullable field %s", name)
 }
 
@@ -600,55 +1150,86 @@ func (m *PlaneMutation) ResetField(name string) error {
 	case plane.FieldName:
 		m.ResetName()
 		return nil
+	case plane.FieldGarageID:
+		m.ResetGarageID()
+		return nil
 	}
 	return fmt.Errorf("unknown Plane field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlaneMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.garage != nil {
+		edges = append(edges, plane.EdgeGarage)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *PlaneMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case plane.EdgeGarage:
+		if id := m.garage; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlaneMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *PlaneMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlaneMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedgarage {
+		edges = append(edges, plane.EdgeGarage)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *PlaneMutation) EdgeCleared(name string) bool {
+	switch name {
+	case plane.EdgeGarage:
+		return m.clearedgarage
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *PlaneMutation) ClearEdge(name string) error {
+	switch name {
+	case plane.EdgeGarage:
+		m.ClearGarage()
+		return nil
+	}
 	return fmt.Errorf("unknown Plane unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *PlaneMutation) ResetEdge(name string) error {
+	switch name {
+	case plane.EdgeGarage:
+		m.ResetGarage()
+		return nil
+	}
 	return fmt.Errorf("unknown Plane edge %s", name)
 }
 
@@ -661,6 +1242,8 @@ type VehicleMutation struct {
 	_type         *string
 	name          *string
 	clearedFields map[string]struct{}
+	garage        *int
+	clearedgarage bool
 	done          bool
 	oldValue      func(context.Context) (*Vehicle, error)
 	predicates    []predicate.Vehicle
@@ -842,6 +1425,81 @@ func (m *VehicleMutation) ResetName() {
 	m.name = nil
 }
 
+// SetGarageID sets the "garage_id" field.
+func (m *VehicleMutation) SetGarageID(i int) {
+	m.garage = &i
+}
+
+// GarageID returns the value of the "garage_id" field in the mutation.
+func (m *VehicleMutation) GarageID() (r int, exists bool) {
+	v := m.garage
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGarageID returns the old "garage_id" field's value of the Vehicle entity.
+// If the Vehicle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VehicleMutation) OldGarageID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGarageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGarageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGarageID: %w", err)
+	}
+	return oldValue.GarageID, nil
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (m *VehicleMutation) ClearGarageID() {
+	m.garage = nil
+	m.clearedFields[vehicle.FieldGarageID] = struct{}{}
+}
+
+// GarageIDCleared returns if the "garage_id" field was cleared in this mutation.
+func (m *VehicleMutation) GarageIDCleared() bool {
+	_, ok := m.clearedFields[vehicle.FieldGarageID]
+	return ok
+}
+
+// ResetGarageID resets all changes to the "garage_id" field.
+func (m *VehicleMutation) ResetGarageID() {
+	m.garage = nil
+	delete(m.clearedFields, vehicle.FieldGarageID)
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (m *VehicleMutation) ClearGarage() {
+	m.clearedgarage = true
+}
+
+// GarageCleared reports if the "garage" edge to the Garage entity was cleared.
+func (m *VehicleMutation) GarageCleared() bool {
+	return m.GarageIDCleared() || m.clearedgarage
+}
+
+// GarageIDs returns the "garage" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GarageID instead. It exists only for internal usage by the builders.
+func (m *VehicleMutation) GarageIDs() (ids []int) {
+	if id := m.garage; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGarage resets all changes to the "garage" edge.
+func (m *VehicleMutation) ResetGarage() {
+	m.garage = nil
+	m.clearedgarage = false
+}
+
 // Where appends a list predicates to the VehicleMutation builder.
 func (m *VehicleMutation) Where(ps ...predicate.Vehicle) {
 	m.predicates = append(m.predicates, ps...)
@@ -861,12 +1519,15 @@ func (m *VehicleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VehicleMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m._type != nil {
 		fields = append(fields, vehicle.FieldType)
 	}
 	if m.name != nil {
 		fields = append(fields, vehicle.FieldName)
+	}
+	if m.garage != nil {
+		fields = append(fields, vehicle.FieldGarageID)
 	}
 	return fields
 }
@@ -880,6 +1541,8 @@ func (m *VehicleMutation) Field(name string) (ent.Value, bool) {
 		return m.GetType()
 	case vehicle.FieldName:
 		return m.Name()
+	case vehicle.FieldGarageID:
+		return m.GarageID()
 	}
 	return nil, false
 }
@@ -893,6 +1556,8 @@ func (m *VehicleMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldType(ctx)
 	case vehicle.FieldName:
 		return m.OldName(ctx)
+	case vehicle.FieldGarageID:
+		return m.OldGarageID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Vehicle field %s", name)
 }
@@ -916,6 +1581,13 @@ func (m *VehicleMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
+	case vehicle.FieldGarageID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGarageID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Vehicle field %s", name)
 }
@@ -923,13 +1595,16 @@ func (m *VehicleMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *VehicleMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *VehicleMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
 	return nil, false
 }
 
@@ -945,7 +1620,11 @@ func (m *VehicleMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *VehicleMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(vehicle.FieldGarageID) {
+		fields = append(fields, vehicle.FieldGarageID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -958,6 +1637,11 @@ func (m *VehicleMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *VehicleMutation) ClearField(name string) error {
+	switch name {
+	case vehicle.FieldGarageID:
+		m.ClearGarageID()
+		return nil
+	}
 	return fmt.Errorf("unknown Vehicle nullable field %s", name)
 }
 
@@ -971,54 +1655,85 @@ func (m *VehicleMutation) ResetField(name string) error {
 	case vehicle.FieldName:
 		m.ResetName()
 		return nil
+	case vehicle.FieldGarageID:
+		m.ResetGarageID()
+		return nil
 	}
 	return fmt.Errorf("unknown Vehicle field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *VehicleMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.garage != nil {
+		edges = append(edges, vehicle.EdgeGarage)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *VehicleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case vehicle.EdgeGarage:
+		if id := m.garage; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *VehicleMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *VehicleMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *VehicleMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedgarage {
+		edges = append(edges, vehicle.EdgeGarage)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *VehicleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case vehicle.EdgeGarage:
+		return m.clearedgarage
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *VehicleMutation) ClearEdge(name string) error {
+	switch name {
+	case vehicle.EdgeGarage:
+		m.ClearGarage()
+		return nil
+	}
 	return fmt.Errorf("unknown Vehicle unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *VehicleMutation) ResetEdge(name string) error {
+	switch name {
+	case vehicle.EdgeGarage:
+		m.ResetGarage()
+		return nil
+	}
 	return fmt.Errorf("unknown Vehicle edge %s", name)
 }

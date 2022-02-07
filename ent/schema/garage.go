@@ -6,25 +6,23 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
-// Plane holds the schema definition for the Plane entity.
-type Plane struct {
+// Garage holds the schema definition for the Garage entity.
+type Garage struct {
 	ent.Schema
 }
 
-// Fields of the Plane.
-func (Plane) Fields() []ent.Field {
+// Fields of the Garage.
+func (Garage) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),
-		field.Int("garage_id").Optional().Nillable(),
 	}
 }
 
-func (Plane) Edges() []ent.Edge {
+func (Garage) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("garage", Garage.Type).Field("garage_id").Unique(),
+		// not sure
 	}
 }

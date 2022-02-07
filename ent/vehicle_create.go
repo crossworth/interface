@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/vehicle"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -31,10 +32,29 @@ func (vc *VehicleCreate) SetName(s string) *VehicleCreate {
 	return vc
 }
 
+// SetGarageID sets the "garage_id" field.
+func (vc *VehicleCreate) SetGarageID(i int) *VehicleCreate {
+	vc.mutation.SetGarageID(i)
+	return vc
+}
+
+// SetNillableGarageID sets the "garage_id" field if the given value is not nil.
+func (vc *VehicleCreate) SetNillableGarageID(i *int) *VehicleCreate {
+	if i != nil {
+		vc.SetGarageID(*i)
+	}
+	return vc
+}
+
 // SetID sets the "id" field.
 func (vc *VehicleCreate) SetID(s string) *VehicleCreate {
 	vc.mutation.SetID(s)
 	return vc
+}
+
+// SetGarage sets the "garage" edge to the Garage entity.
+func (vc *VehicleCreate) SetGarage(g *Garage) *VehicleCreate {
+	return vc.SetGarageID(g.ID)
 }
 
 // Mutation returns the VehicleMutation object of the builder.
@@ -164,6 +184,26 @@ func (vc *VehicleCreate) createSpec() (*Vehicle, *sqlgraph.CreateSpec) {
 			Column: vehicle.FieldName,
 		})
 		_node.Name = value
+	}
+	if nodes := vc.mutation.GarageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   vehicle.GarageTable,
+			Columns: []string{vehicle.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.GarageID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

@@ -11,8 +11,19 @@ const (
 	FieldType = "type"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldGarageID holds the string denoting the garage_id field in the database.
+	FieldGarageID = "garage_id"
+	// EdgeGarage holds the string denoting the garage edge name in mutations.
+	EdgeGarage = "garage"
 	// Table holds the table name of the vehicle in the database.
 	Table = "vehicles"
+	// GarageTable is the table that holds the garage relation/edge.
+	GarageTable = "vehicles"
+	// GarageInverseTable is the table name for the Garage entity.
+	// It exists in this package in order to avoid circular dependency with the "garage" package.
+	GarageInverseTable = "garages"
+	// GarageColumn is the table column denoting the garage relation/edge.
+	GarageColumn = "garage_id"
 )
 
 // Columns holds all SQL columns for vehicle fields.
@@ -20,6 +31,7 @@ var Columns = []string{
 	FieldID,
 	FieldType,
 	FieldName,
+	FieldGarageID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

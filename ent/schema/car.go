@@ -6,6 +6,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -18,5 +19,12 @@ type Car struct {
 func (Car) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),
+		field.Int("garage_id").Optional().Nillable(),
+	}
+}
+
+func (Car) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("garage", Garage.Type).Field("garage_id").Unique(),
 	}
 }

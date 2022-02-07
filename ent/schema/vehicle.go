@@ -7,6 +7,7 @@ package schema
 import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -18,9 +19,16 @@ type Vehicle struct {
 // Fields of the Vehicle.
 func (Vehicle) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").SchemaType(map[string]string{dialect.MySQL: " varchar(20)"}), // MUST be present
+		field.String("id").SchemaType(map[string]string{dialect.MySQL: "varchar(20)"}), // MUST be present
 		field.String("type"), // MUST be present
 		field.String("name"),
+		field.Int("garage_id").Optional().Nillable(),
+	}
+}
+
+func (Vehicle) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("garage", Garage.Type).Field("garage_id").Unique(),
 	}
 }
 

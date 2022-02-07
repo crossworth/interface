@@ -9,6 +9,9 @@ import (
 // Car is the predicate function for car builders.
 type Car func(*sql.Selector)
 
+// Garage is the predicate function for garage builders.
+type Garage func(*sql.Selector)
+
 // Plane is the predicate function for plane builders.
 type Plane func(*sql.Selector)
 

@@ -10,11 +10,13 @@ import (
 	"entgo.io/bug/ent/migrate"
 
 	"entgo.io/bug/ent/car"
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
 	"entgo.io/bug/ent/vehicle"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -24,6 +26,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Car is the client for interacting with the Car builders.
 	Car *CarClient
+	// Garage is the client for interacting with the Garage builders.
+	Garage *GarageClient
 	// Plane is the client for interacting with the Plane builders.
 	Plane *PlaneClient
 	// Vehicle is the client for interacting with the Vehicle builders.
@@ -42,6 +46,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Car = NewCarClient(c.config)
+	c.Garage = NewGarageClient(c.config)
 	c.Plane = NewPlaneClient(c.config)
 	c.Vehicle = NewVehicleClient(c.config)
 }
@@ -78,6 +83,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:     ctx,
 		config:  cfg,
 		Car:     NewCarClient(cfg),
+		Garage:  NewGarageClient(cfg),
 		Plane:   NewPlaneClient(cfg),
 		Vehicle: NewVehicleClient(cfg),
 	}, nil
@@ -99,6 +105,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		config:  cfg,
 		Car:     NewCarClient(cfg),
+		Garage:  NewGarageClient(cfg),
 		Plane:   NewPlaneClient(cfg),
 		Vehicle: NewVehicleClient(cfg),
 	}, nil
@@ -131,6 +138,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Car.Use(hooks...)
+	c.Garage.Use(hooks...)
 	c.Plane.Use(hooks...)
 	c.Vehicle.Use(hooks...)
 }
@@ -220,9 +228,115 @@ func (c *CarClient) GetX(ctx context.Context, id int) *Car {
 	return obj
 }
 
+// QueryGarage queries the garage edge of a Car.
+func (c *CarClient) QueryGarage(ca *Car) *GarageQuery {
+	query := &GarageQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ca.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(car.Table, car.FieldID, id),
+			sqlgraph.To(garage.Table, garage.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, car.GarageTable, car.GarageColumn),
+		)
+		fromV = sqlgraph.Neighbors(ca.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CarClient) Hooks() []Hook {
 	return c.hooks.Car
+}
+
+// GarageClient is a client for the Garage schema.
+type GarageClient struct {
+	config
+}
+
+// NewGarageClient returns a client for the Garage from the given config.
+func NewGarageClient(c config) *GarageClient {
+	return &GarageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `garage.Hooks(f(g(h())))`.
+func (c *GarageClient) Use(hooks ...Hook) {
+	c.hooks.Garage = append(c.hooks.Garage, hooks...)
+}
+
+// Create returns a create builder for Garage.
+func (c *GarageClient) Create() *GarageCreate {
+	mutation := newGarageMutation(c.config, OpCreate)
+	return &GarageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Garage entities.
+func (c *GarageClient) CreateBulk(builders ...*GarageCreate) *GarageCreateBulk {
+	return &GarageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Garage.
+func (c *GarageClient) Update() *GarageUpdate {
+	mutation := newGarageMutation(c.config, OpUpdate)
+	return &GarageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GarageClient) UpdateOne(ga *Garage) *GarageUpdateOne {
+	mutation := newGarageMutation(c.config, OpUpdateOne, withGarage(ga))
+	return &GarageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GarageClient) UpdateOneID(id int) *GarageUpdateOne {
+	mutation := newGarageMutation(c.config, OpUpdateOne, withGarageID(id))
+	return &GarageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Garage.
+func (c *GarageClient) Delete() *GarageDelete {
+	mutation := newGarageMutation(c.config, OpDelete)
+	return &GarageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *GarageClient) DeleteOne(ga *Garage) *GarageDeleteOne {
+	return c.DeleteOneID(ga.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *GarageClient) DeleteOneID(id int) *GarageDeleteOne {
+	builder := c.Delete().Where(garage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GarageDeleteOne{builder}
+}
+
+// Query returns a query builder for Garage.
+func (c *GarageClient) Query() *GarageQuery {
+	return &GarageQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Garage entity by its id.
+func (c *GarageClient) Get(ctx context.Context, id int) (*Garage, error) {
+	return c.Query().Where(garage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GarageClient) GetX(ctx context.Context, id int) *Garage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GarageClient) Hooks() []Hook {
+	return c.hooks.Garage
 }
 
 // PlaneClient is a client for the Plane schema.
@@ -308,6 +422,22 @@ func (c *PlaneClient) GetX(ctx context.Context, id int) *Plane {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGarage queries the garage edge of a Plane.
+func (c *PlaneClient) QueryGarage(pl *Plane) *GarageQuery {
+	query := &GarageQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(plane.Table, plane.FieldID, id),
+			sqlgraph.To(garage.Table, garage.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, plane.GarageTable, plane.GarageColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -398,6 +528,22 @@ func (c *VehicleClient) GetX(ctx context.Context, id string) *Vehicle {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGarage queries the garage edge of a Vehicle.
+func (c *VehicleClient) QueryGarage(v *Vehicle) *GarageQuery {
+	query := &GarageQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := v.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vehicle.Table, vehicle.FieldID, id),
+			sqlgraph.To(garage.Table, garage.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, vehicle.GarageTable, vehicle.GarageColumn),
+		)
+		fromV = sqlgraph.Neighbors(v.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

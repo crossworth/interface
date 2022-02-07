@@ -58,12 +58,20 @@ func TestBugMaria(t *testing.T) {
 
 func test(t *testing.T, client *ent.Client) {
 	ctx := context.Background()
-	client.Plane.Create().SetName("Plane1").SaveX(ctx)
-	client.Plane.Create().SetName("Plane2").SaveX(ctx)
-	client.Plane.Create().SetName("Plane3").SaveX(ctx)
-	client.Car.Create().SetName("Car1").SaveX(ctx)
-	client.Car.Create().SetName("Car2").SaveX(ctx)
-	client.Car.Create().SetName("Car3").SaveX(ctx)
+
+	g1 := client.Garage.Create().SetName("Garage1").SaveX(ctx)
+	g2 := client.Garage.Create().SetName("Garage2").SaveX(ctx)
+	g3 := client.Garage.Create().SetName("Garage3").SaveX(ctx)
+	g4 := client.Garage.Create().SetName("Garage4").SaveX(ctx)
+	g5 := client.Garage.Create().SetName("Garage5").SaveX(ctx)
+	g6 := client.Garage.Create().SetName("Garage6").SaveX(ctx)
+
+	client.Plane.Create().SetName("Plane1").SetGarage(g1).SaveX(ctx)
+	client.Plane.Create().SetName("Plane2").SetGarage(g2).SaveX(ctx)
+	client.Plane.Create().SetName("Plane3").SetGarage(g3).SaveX(ctx)
+	client.Car.Create().SetName("Car1").SetGarage(g4).SaveX(ctx)
+	client.Car.Create().SetName("Car2").SetGarage(g5).SaveX(ctx)
+	client.Car.Create().SetName("Car3").SetGarage(g6).SaveX(ctx)
 
 	bq := client.Debug().Vehicle.Query()
 
@@ -71,17 +79,17 @@ func test(t *testing.T, client *ent.Client) {
 	subQuery := ent.Selector(ctx, bq.Clone().Modify(func(s *sql.Selector) {
 		tb1 := sql.Table("cars").As("c")
 
-		s.Select(tb1.C("id"), "'plane' AS `type`", tb1.C("name")).From(tb1)
+		s.Select(tb1.C("id"), "'plane' AS `type`", tb1.C("name"), tb1.C("garage_id")).From(tb1)
 
 		tb2 := sql.Table("planes").As("p")
-		sel := sql.Select(tb2.C("id"), "'plane' AS `type`", tb2.C("name")).From(tb2)
+		sel := sql.Select(tb2.C("id"), "'plane' AS `type`", tb2.C("name"), tb2.C("garage_id")).From(tb2)
 
 		s.UnionAll(sel).As("vehicles")
 	}))
 
 	// ALL
 	vehs := bq.Clone().Modify(func(s *sql.Selector) {
-		s.Select(s.C(vehicle.FieldID), s.C(vehicle.FieldType), s.C(vehicle.FieldName)).From(subQuery).As("g")
+		s.Select(s.C(vehicle.FieldID), s.C(vehicle.FieldType), s.C(vehicle.FieldName), s.C(vehicle.FieldGarageID)).From(subQuery).As("g")
 	}).AllX(ctx)
 	for _, v := range vehs {
 		fmt.Printf("%s:%s: %s\n", v.ID, v.Type, v.Name)
@@ -94,6 +102,23 @@ func test(t *testing.T, client *ent.Client) {
 	// 1:plane: Plane1
 	// 2:plane: Plane2
 	// 3:plane: Plane3
+
+	// ALL with garages
+	vehs = bq.Clone().Modify(func(s *sql.Selector) {
+		s.Select(s.C(vehicle.FieldID), s.C(vehicle.FieldType), s.C(vehicle.FieldName), s.C(vehicle.FieldGarageID)).From(subQuery).As("g")
+	}).WithGarage().AllX(ctx)
+	for _, v := range vehs {
+		fmt.Printf("%s:%s: %s Garage => %s\n", v.ID, v.Type, v.Name, v.Edges.Garage.Name)
+	}
+
+	// 2022/02/07 19:25:24 driver.Query: query=SELECT DISTINCT `vehicles`.`id`, `vehicles`.`type`, `vehicles`.`name`, `vehicles`.`garage_id` FROM (SELECT `c`.`id`, 'plane' AS `type`, `c`.`name`, `c`.`garage_id` FROM `cars` AS `c` UNION ALL SELECT `p`.`id`, 'plane' AS `type`, `p`.`name`, `p`.`garage_id` FROM `planes` AS `p`) AS `vehicles` args=[]
+	// 2022/02/07 19:25:24 driver.Query: query=SELECT DISTINCT `garages`.`id`, `garages`.`name` FROM `garages` WHERE `garages`.`id` IN (?, ?, ?, ?, ?, ?) args=[4 5 6 1 2 3]
+	// 1:plane: Car1 Garage => Garage4
+	// 2:plane: Car2 Garage => Garage5
+	// 3:plane: Car3 Garage => Garage6
+	// 1:plane: Plane1 Garage => Garage1
+	// 2:plane: Plane2 Garage => Garage2
+	// 3:plane: Plane3 Garage => Garage3
 
 	// WHERE
 	vehs = bq.Clone().Modify(func(s *sql.Selector) {

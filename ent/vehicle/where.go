@@ -5,6 +5,7 @@ package vehicle
 import (
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -101,6 +102,13 @@ func Type(v string) predicate.Vehicle {
 func Name(v string) predicate.Vehicle {
 	return predicate.Vehicle(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldName), v))
+	})
+}
+
+// GarageID applies equality check predicate on the "garage_id" field. It's identical to GarageIDEQ.
+func GarageID(v int) predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldGarageID), v))
 	})
 }
 
@@ -323,6 +331,96 @@ func NameEqualFold(v string) predicate.Vehicle {
 func NameContainsFold(v string) predicate.Vehicle {
 	return predicate.Vehicle(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldName), v))
+	})
+}
+
+// GarageIDEQ applies the EQ predicate on the "garage_id" field.
+func GarageIDEQ(v int) predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldGarageID), v))
+	})
+}
+
+// GarageIDNEQ applies the NEQ predicate on the "garage_id" field.
+func GarageIDNEQ(v int) predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldGarageID), v))
+	})
+}
+
+// GarageIDIn applies the In predicate on the "garage_id" field.
+func GarageIDIn(vs ...int) predicate.Vehicle {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Vehicle(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldGarageID), v...))
+	})
+}
+
+// GarageIDNotIn applies the NotIn predicate on the "garage_id" field.
+func GarageIDNotIn(vs ...int) predicate.Vehicle {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Vehicle(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldGarageID), v...))
+	})
+}
+
+// GarageIDIsNil applies the IsNil predicate on the "garage_id" field.
+func GarageIDIsNil() predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldGarageID)))
+	})
+}
+
+// GarageIDNotNil applies the NotNil predicate on the "garage_id" field.
+func GarageIDNotNil() predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldGarageID)))
+	})
+}
+
+// HasGarage applies the HasEdge predicate on the "garage" edge.
+func HasGarage() predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(GarageTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, GarageTable, GarageColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGarageWith applies the HasEdge predicate on the "garage" edge with a given conditions (other predicates).
+func HasGarageWith(preds ...predicate.Garage) predicate.Vehicle {
+	return predicate.Vehicle(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(GarageInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, GarageTable, GarageColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

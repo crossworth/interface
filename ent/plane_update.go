@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/ent/dialect/sql"
@@ -33,9 +34,40 @@ func (pu *PlaneUpdate) SetName(s string) *PlaneUpdate {
 	return pu
 }
 
+// SetGarageID sets the "garage_id" field.
+func (pu *PlaneUpdate) SetGarageID(i int) *PlaneUpdate {
+	pu.mutation.SetGarageID(i)
+	return pu
+}
+
+// SetNillableGarageID sets the "garage_id" field if the given value is not nil.
+func (pu *PlaneUpdate) SetNillableGarageID(i *int) *PlaneUpdate {
+	if i != nil {
+		pu.SetGarageID(*i)
+	}
+	return pu
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (pu *PlaneUpdate) ClearGarageID() *PlaneUpdate {
+	pu.mutation.ClearGarageID()
+	return pu
+}
+
+// SetGarage sets the "garage" edge to the Garage entity.
+func (pu *PlaneUpdate) SetGarage(g *Garage) *PlaneUpdate {
+	return pu.SetGarageID(g.ID)
+}
+
 // Mutation returns the PlaneMutation object of the builder.
 func (pu *PlaneUpdate) Mutation() *PlaneMutation {
 	return pu.mutation
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (pu *PlaneUpdate) ClearGarage() *PlaneUpdate {
+	pu.mutation.ClearGarage()
+	return pu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -117,6 +149,41 @@ func (pu *PlaneUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: plane.FieldName,
 		})
 	}
+	if pu.mutation.GarageCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   plane.GarageTable,
+			Columns: []string{plane.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.GarageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   plane.GarageTable,
+			Columns: []string{plane.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{plane.Label}
@@ -142,9 +209,40 @@ func (puo *PlaneUpdateOne) SetName(s string) *PlaneUpdateOne {
 	return puo
 }
 
+// SetGarageID sets the "garage_id" field.
+func (puo *PlaneUpdateOne) SetGarageID(i int) *PlaneUpdateOne {
+	puo.mutation.SetGarageID(i)
+	return puo
+}
+
+// SetNillableGarageID sets the "garage_id" field if the given value is not nil.
+func (puo *PlaneUpdateOne) SetNillableGarageID(i *int) *PlaneUpdateOne {
+	if i != nil {
+		puo.SetGarageID(*i)
+	}
+	return puo
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (puo *PlaneUpdateOne) ClearGarageID() *PlaneUpdateOne {
+	puo.mutation.ClearGarageID()
+	return puo
+}
+
+// SetGarage sets the "garage" edge to the Garage entity.
+func (puo *PlaneUpdateOne) SetGarage(g *Garage) *PlaneUpdateOne {
+	return puo.SetGarageID(g.ID)
+}
+
 // Mutation returns the PlaneMutation object of the builder.
 func (puo *PlaneUpdateOne) Mutation() *PlaneMutation {
 	return puo.mutation
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (puo *PlaneUpdateOne) ClearGarage() *PlaneUpdateOne {
+	puo.mutation.ClearGarage()
+	return puo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -249,6 +347,41 @@ func (puo *PlaneUpdateOne) sqlSave(ctx context.Context) (_node *Plane, err error
 			Value:  value,
 			Column: plane.FieldName,
 		})
+	}
+	if puo.mutation.GarageCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   plane.GarageTable,
+			Columns: []string{plane.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.GarageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   plane.GarageTable,
+			Columns: []string{plane.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Plane{config: puo.config}
 	_spec.Assign = _node.assignValues

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"entgo.io/bug/ent/car"
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -33,9 +34,40 @@ func (cu *CarUpdate) SetName(s string) *CarUpdate {
 	return cu
 }
 
+// SetGarageID sets the "garage_id" field.
+func (cu *CarUpdate) SetGarageID(i int) *CarUpdate {
+	cu.mutation.SetGarageID(i)
+	return cu
+}
+
+// SetNillableGarageID sets the "garage_id" field if the given value is not nil.
+func (cu *CarUpdate) SetNillableGarageID(i *int) *CarUpdate {
+	if i != nil {
+		cu.SetGarageID(*i)
+	}
+	return cu
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (cu *CarUpdate) ClearGarageID() *CarUpdate {
+	cu.mutation.ClearGarageID()
+	return cu
+}
+
+// SetGarage sets the "garage" edge to the Garage entity.
+func (cu *CarUpdate) SetGarage(g *Garage) *CarUpdate {
+	return cu.SetGarageID(g.ID)
+}
+
 // Mutation returns the CarMutation object of the builder.
 func (cu *CarUpdate) Mutation() *CarMutation {
 	return cu.mutation
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (cu *CarUpdate) ClearGarage() *CarUpdate {
+	cu.mutation.ClearGarage()
+	return cu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -117,6 +149,41 @@ func (cu *CarUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: car.FieldName,
 		})
 	}
+	if cu.mutation.GarageCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   car.GarageTable,
+			Columns: []string{car.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.GarageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   car.GarageTable,
+			Columns: []string{car.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{car.Label}
@@ -142,9 +209,40 @@ func (cuo *CarUpdateOne) SetName(s string) *CarUpdateOne {
 	return cuo
 }
 
+// SetGarageID sets the "garage_id" field.
+func (cuo *CarUpdateOne) SetGarageID(i int) *CarUpdateOne {
+	cuo.mutation.SetGarageID(i)
+	return cuo
+}
+
+// SetNillableGarageID sets the "garage_id" field if the given value is not nil.
+func (cuo *CarUpdateOne) SetNillableGarageID(i *int) *CarUpdateOne {
+	if i != nil {
+		cuo.SetGarageID(*i)
+	}
+	return cuo
+}
+
+// ClearGarageID clears the value of the "garage_id" field.
+func (cuo *CarUpdateOne) ClearGarageID() *CarUpdateOne {
+	cuo.mutation.ClearGarageID()
+	return cuo
+}
+
+// SetGarage sets the "garage" edge to the Garage entity.
+func (cuo *CarUpdateOne) SetGarage(g *Garage) *CarUpdateOne {
+	return cuo.SetGarageID(g.ID)
+}
+
 // Mutation returns the CarMutation object of the builder.
 func (cuo *CarUpdateOne) Mutation() *CarMutation {
 	return cuo.mutation
+}
+
+// ClearGarage clears the "garage" edge to the Garage entity.
+func (cuo *CarUpdateOne) ClearGarage() *CarUpdateOne {
+	cuo.mutation.ClearGarage()
+	return cuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -249,6 +347,41 @@ func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (_node *Car, err error) {
 			Value:  value,
 			Column: car.FieldName,
 		})
+	}
+	if cuo.mutation.GarageCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   car.GarageTable,
+			Columns: []string{car.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.GarageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   car.GarageTable,
+			Columns: []string{car.GarageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: garage.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Car{config: cuo.config}
 	_spec.Assign = _node.assignValues

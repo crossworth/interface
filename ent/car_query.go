@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"entgo.io/bug/ent/car"
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -24,6 +25,8 @@ type CarQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Car
+	// eager-loading edges.
+	withGarage *GarageQuery
 	modifiers  []func(s *sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -59,6 +62,28 @@ func (cq *CarQuery) Unique(unique bool) *CarQuery {
 func (cq *CarQuery) Order(o ...OrderFunc) *CarQuery {
 	cq.order = append(cq.order, o...)
 	return cq
+}
+
+// QueryGarage chains the current query on the "garage" edge.
+func (cq *CarQuery) QueryGarage() *GarageQuery {
+	query := &GarageQuery{config: cq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(car.Table, car.FieldID, selector),
+			sqlgraph.To(garage.Table, garage.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, car.GarageTable, car.GarageColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Car entity from the query.
@@ -242,10 +267,22 @@ func (cq *CarQuery) Clone() *CarQuery {
 		offset:     cq.offset,
 		order:      append([]OrderFunc{}, cq.order...),
 		predicates: append([]predicate.Car{}, cq.predicates...),
+		withGarage: cq.withGarage.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
+}
+
+// WithGarage tells the query-builder to eager-load the nodes that are connected to
+// the "garage" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CarQuery) WithGarage(opts ...func(*GarageQuery)) *CarQuery {
+	query := &GarageQuery{config: cq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withGarage = query
+	return cq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,8 +348,11 @@ func (cq *CarQuery) prepareQuery(ctx context.Context) error {
 
 func (cq *CarQuery) sqlAll(ctx context.Context) ([]*Car, error) {
 	var (
-		nodes = []*Car{}
-		_spec = cq.querySpec()
+		nodes       = []*Car{}
+		_spec       = cq.querySpec()
+		loadedTypes = [1]bool{
+			cq.withGarage != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Car{config: cq.config}
@@ -324,6 +364,7 @@ func (cq *CarQuery) sqlAll(ctx context.Context) ([]*Car, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(cq.modifiers) > 0 {
@@ -335,6 +376,36 @@ func (cq *CarQuery) sqlAll(ctx context.Context) ([]*Car, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := cq.withGarage; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Car)
+		for i := range nodes {
+			if nodes[i].GarageID == nil {
+				continue
+			}
+			fk := *nodes[i].GarageID
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(garage.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "garage_id" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Garage = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/bug/ent/garage"
 	"entgo.io/bug/ent/plane"
 	"entgo.io/bug/ent/predicate"
 	"entgo.io/ent/dialect/sql"
@@ -24,6 +25,8 @@ type PlaneQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Plane
+	// eager-loading edges.
+	withGarage *GarageQuery
 	modifiers  []func(s *sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -59,6 +62,28 @@ func (pq *PlaneQuery) Unique(unique bool) *PlaneQuery {
 func (pq *PlaneQuery) Order(o ...OrderFunc) *PlaneQuery {
 	pq.order = append(pq.order, o...)
 	return pq
+}
+
+// QueryGarage chains the current query on the "garage" edge.
+func (pq *PlaneQuery) QueryGarage() *GarageQuery {
+	query := &GarageQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(plane.Table, plane.FieldID, selector),
+			sqlgraph.To(garage.Table, garage.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, plane.GarageTable, plane.GarageColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Plane entity from the query.
@@ -242,10 +267,22 @@ func (pq *PlaneQuery) Clone() *PlaneQuery {
 		offset:     pq.offset,
 		order:      append([]OrderFunc{}, pq.order...),
 		predicates: append([]predicate.Plane{}, pq.predicates...),
+		withGarage: pq.withGarage.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
+}
+
+// WithGarage tells the query-builder to eager-load the nodes that are connected to
+// the "garage" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlaneQuery) WithGarage(opts ...func(*GarageQuery)) *PlaneQuery {
+	query := &GarageQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withGarage = query
+	return pq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,8 +348,11 @@ func (pq *PlaneQuery) prepareQuery(ctx context.Context) error {
 
 func (pq *PlaneQuery) sqlAll(ctx context.Context) ([]*Plane, error) {
 	var (
-		nodes = []*Plane{}
-		_spec = pq.querySpec()
+		nodes       = []*Plane{}
+		_spec       = pq.querySpec()
+		loadedTypes = [1]bool{
+			pq.withGarage != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Plane{config: pq.config}
@@ -324,6 +364,7 @@ func (pq *PlaneQuery) sqlAll(ctx context.Context) ([]*Plane, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(pq.modifiers) > 0 {
@@ -335,6 +376,36 @@ func (pq *PlaneQuery) sqlAll(ctx context.Context) ([]*Plane, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := pq.withGarage; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Plane)
+		for i := range nodes {
+			if nodes[i].GarageID == nil {
+				continue
+			}
+			fk := *nodes[i].GarageID
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(garage.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "garage_id" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Garage = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 
