@@ -9,15 +9,41 @@ import (
 	"entgo.io/bug/ent"
 )
 
-// The UserFunc type is an adapter to allow the use of ordinary
-// function as User mutator.
-type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
+// The CarFunc type is an adapter to allow the use of ordinary
+// function as Car mutator.
+type CarFunc func(context.Context, *ent.CarMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.UserMutation)
+func (f CarFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.CarMutation)
 	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CarMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The GarageFunc type is an adapter to allow the use of ordinary
+// function as Garage mutator.
+type GarageFunc func(context.Context, *ent.GarageMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GarageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GarageMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GarageMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The PlaneFunc type is an adapter to allow the use of ordinary
+// function as Plane mutator.
+type PlaneFunc func(context.Context, *ent.PlaneMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PlaneFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PlaneMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlaneMutation", m)
 	}
 	return f(ctx, mv)
 }
